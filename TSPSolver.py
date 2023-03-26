@@ -3,6 +3,8 @@
 
 import time
 import numpy as np
+from BranchBound import BranchBound, State
+from PriorityQueueImplementations import HeapPriorityQueue
 from TSPClasses import *
 import heapq
 import itertools
@@ -85,8 +87,24 @@ class TSPSolver:
 	'''
 
 	def branchAndBound( self, time_allowance=60.0 ):
+		queue = HeapPriorityQueue()
+		cities = self._scenario.getCities()
+		costs = []
+		for i in range(len(cities)):
+			costs.append([])
+			for j in range(len(cities)):
+				if i == j:
+					cost = float('inf')
+				else:
+					cost = cities[i].costTo(cities[j])
+				costs[i].append(cost)
+		paths = [i for i in range(1, len(cities))]
+		state = State(0, costs, 0, paths)
+		states = {}
+		states[0] = state
+		solver = BranchBound(queue, time_allowance)
+		cost = solver.solve(states)
 		pass
-
 
 
 	''' <summary>
