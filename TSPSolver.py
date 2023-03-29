@@ -3,7 +3,7 @@
 
 import time
 import numpy as np
-from BranchBound import BranchBound, State
+from BranchBound import BranchBound
 from PriorityQueueImplementations import HeapPriorityQueue
 from TSPClasses import *
 import heapq
@@ -103,8 +103,12 @@ class TSPSolver:
 		states = {}
 		states[0] = state
 		solver = BranchBound(queue, time_allowance)
-		cost = solver.solve(states)
+		bssf = self.getInitialBSSF(states)
+		cost = solver.solve(states, bssf)
 		pass
+
+	def getInitialBSSF(self, states):
+		return float('inf')
 
 
 	''' <summary>
@@ -118,3 +122,41 @@ class TSPSolver:
 
 	def fancy( self,time_allowance=60.0 ):
 		pass
+
+class State:
+	def __init__(self, index, cost, bound, path):
+		self.index = index
+		self.path = path
+		self.cost, b = self.reduce(cost)
+		self.lower_bound = bound + b
+
+	def expand(self):
+		states = []
+		for i in range(len(self.path)):
+			cost = np.ndarray.copy(self.cost)
+			index = self.path[i]
+			cost[:, self.path[i]] = float('inf')
+			cost[self.path[i], :] = float('inf')
+			path = np.delete(self.path, i)
+			state = State(index, cost, self.lower_bound, path)
+			states.append(state)
+		return states
+	def is_complete(self):
+		return len(self.path) == 0
+	def reduce(self, cost):
+		cost = np.array(cost)
+		total = 0
+		for i in range(len(self.path)):
+			minv = min(cost[self.path[i], :])
+			if minv == float('inf'):
+				return cost, float('inf')
+			cost[self.path[i], :] -= minv
+			total += minv
+		for i in range(len(self.path)):
+			minv = min(cost[:, self.path[i]])
+			if minv == float('inf'):
+				return cost, float('inf')
+			cost[:, self.path[i]] -= minv
+			total += minv
+
+		return cost, total
