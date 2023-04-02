@@ -93,19 +93,33 @@ class TSPSolver:
 		for i in range(len(cities)):
 			costs.append([])
 			for j in range(len(cities)):
-				if i == j:
-					cost = float('inf')
-				else:
-					cost = cities[i].costTo(cities[j])
+				cost = cities[i].costTo(cities[j])
 				costs[i].append(cost)
-		paths = [i for i in range(1, len(cities))]
-		state = State(0, costs, 0, paths)
+		# costs = [[float('inf'), 7, 3, 12],
+	  #  				 [3, float('inf'), 6, 14],
+		# 				 [5, 8, float('inf'), 6],
+		# 				 [9, 3, 5, float('inf')]]
+		paths = np.array([i for i in range(0, len(costs))])
+		state = State(0, costs, 0, paths, paths)
 		states = {}
 		states[0] = state
+		start_time = time.time()
 		solver = BranchBound(queue, time_allowance)
 		bssf = self.getInitialBSSF(states)
 		cost = solver.solve(states, bssf)
-		pass
+		print(cost)
+		end_time = time.time()
+		results = {}
+		# results['cost'] = bssf.cost if foundTour else math.inf
+		# results['time'] = end_time - start_time
+		# results['count'] = count
+		# results['soln'] = bssf
+		# results['max'] = None
+		# results['total'] = None
+		# results['pruned'] = None
+
+		return results
+		
 
 	def getInitialBSSF(self, states):
 		return float('inf')
@@ -124,39 +138,46 @@ class TSPSolver:
 		pass
 
 class State:
-	def __init__(self, index, cost, bound, path):
+	def __init__(self, index, cost, bound, out, inp):
 		self.index = index
-		self.path = path
+		self.out = out
+		self.inp = inp
 		self.cost, b = self.reduce(cost)
 		self.lower_bound = bound + b
 
 	def expand(self):
 		states = []
-		for i in range(len(self.path)):
+		for i in range(len(self.out)):
+			index = self.out[i]#._index
+			if index == self.index:
+				continue
 			cost = np.ndarray.copy(self.cost)
-			index = self.path[i]
-			cost[:, self.path[i]] = float('inf')
-			cost[self.path[i], :] = float('inf')
-			path = np.delete(self.path, i)
-			state = State(index, cost, self.lower_bound, path)
+			edge_cost = cost[self.index, index]
+			cost[:, index] = float('inf')
+			cost[self.index, :] = float('inf')
+			out = np.delete(self.out, np.where(self.out == self.index))
+			inp = np.delete(self.inp, np.where(self.inp == index))
+			state = State(index, cost, self.lower_bound + edge_cost, out, inp)
 			states.append(state)
 		return states
 	def is_complete(self):
-		return len(self.path) == 0
+		return len(self.out) <= 1
 	def reduce(self, cost):
 		cost = np.array(cost)
 		total = 0
-		for i in range(len(self.path)):
-			minv = min(cost[self.path[i], :])
+		for i in range(len(self.out)):
+			index = self.out[i]#._index
+			minv = min(cost[index, :])
 			if minv == float('inf'):
 				return cost, float('inf')
-			cost[self.path[i], :] -= minv
+			cost[index, :] -= minv
 			total += minv
-		for i in range(len(self.path)):
-			minv = min(cost[:, self.path[i]])
+		for i in range(len(self.inp)):
+			index = self.inp[i]#._index
+			minv = min(cost[:, index])
 			if minv == float('inf'):
 				return cost, float('inf')
-			cost[:, self.path[i]] -= minv
+			cost[:, index] -= minv
 			total += minv
 
 		return cost, total
