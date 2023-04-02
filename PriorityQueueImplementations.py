@@ -39,7 +39,7 @@ class ArrayPriorityQueue(PriorityQueue):
 	# Time: len(self.keys) is a simple property value, so O(1)
 	# Space: We need self.keys for this function, so O(V)
 	def empty(self):
-		return len(self.keys) == 0
+		return len(self) == 0
 
 	# Time: This function loops through all of the keys, which is all the nodes, so O(V)
 	# Space: Since we need keys and dist which is all the nodes, it is O(V)
@@ -55,12 +55,18 @@ class ArrayPriorityQueue(PriorityQueue):
 		key = self.map(key) if self.map != None else key
 		self.keys.add(key)
 
+	def __len__(self):
+		return len(self.keys)
+
 class HeapPriorityQueue(PriorityQueue):
 	def __init__(self):
 		self.heap = {}
 		self.pointer = {}
 		self.count = 0
 		pass
+
+	def __len__(self):
+		return self.count
 
 	# Time: All of these operations are O(1) time except pDown, which is O(log(V)), so overall O(log(V))
 	# Space: we need the whole heap and pointer array for this, so O(V)

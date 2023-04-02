@@ -100,23 +100,24 @@ class TSPSolver:
 		# 				 [5, 8, float('inf'), 6],
 		# 				 [9, 3, 5, float('inf')]]
 		paths = np.array([i for i in range(0, len(costs))])
-		state = State(0, costs, 0, paths, paths)
+		state = State(0, costs, 0, paths, paths, np.array([0]))
 		states = {}
 		states[0] = state
 		start_time = time.time()
 		solver = BranchBound(queue, time_allowance)
 		bssf = self.getInitialBSSF(states)
-		cost = solver.solve(states, bssf)
-		print(cost)
+		stats = solver.solve(states, bssf)
 		end_time = time.time()
+		sol = TSPSolution([cities[i] for i in stats.state.route] if stats.state else [])
+		print(stats.bssf)
 		results = {}
-		# results['cost'] = bssf.cost if foundTour else math.inf
-		# results['time'] = end_time - start_time
-		# results['count'] = count
-		# results['soln'] = bssf
-		# results['max'] = None
-		# results['total'] = None
-		# results['pruned'] = None
+		results['cost'] = stats.bssf
+		results['time'] = end_time - start_time
+		results['count'] = stats.num_solutions
+		results['soln'] = sol
+		results['max'] = stats.max_size
+		results['total'] = stats.num_states
+		results['pruned'] = stats.num_pruned
 
 		return results
 		
@@ -138,10 +139,11 @@ class TSPSolver:
 		pass
 
 class State:
-	def __init__(self, index, cost, bound, out, inp):
+	def __init__(self, index, cost, bound, out, inp, route):
 		self.index = index
 		self.out = out
 		self.inp = inp
+		self.route = route
 		self.cost, b = self.reduce(cost)
 		self.lower_bound = bound + b
 
@@ -157,7 +159,8 @@ class State:
 			cost[self.index, :] = float('inf')
 			out = np.delete(self.out, np.where(self.out == self.index))
 			inp = np.delete(self.inp, np.where(self.inp == index))
-			state = State(index, cost, self.lower_bound + edge_cost, out, inp)
+			route = np.append(self.route, index)
+			state = State(index, cost, self.lower_bound + edge_cost, out, inp, route)
 			states.append(state)
 		return states
 	def is_complete(self):
