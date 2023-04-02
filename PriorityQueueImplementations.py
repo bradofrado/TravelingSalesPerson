@@ -9,6 +9,9 @@ class ArrayPriorityQueue(PriorityQueue):
 		self.map = None
 		pass
 
+	def __len__(self):
+		return len(self.keys)
+	
 	# Time: The complexity is that of the for loop, O(V), + keys.remove (O(V)) + dist.pop (O(1))
 	#       So overall O(V)
 	# Space: The space complexity is at that of keys and dist, which is O(V)
@@ -54,9 +57,6 @@ class ArrayPriorityQueue(PriorityQueue):
 		self.dist[key] = val
 		key = self.map(key) if self.map != None else key
 		self.keys.add(key)
-
-	def __len__(self):
-		return len(self.keys)
 
 class HeapPriorityQueue(PriorityQueue):
 	def __init__(self):

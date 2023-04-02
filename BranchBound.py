@@ -5,9 +5,9 @@ class BranchBound:
 		self.time_allowance = time_allowance
 		self.queue = queue
 	def solve(self, states, bssf):
-		stats = Stats(bssf, 1)
+		stats = BranchStats(bssf, 1)
 		self.states = states
-		self.queue.insert(self.states[0], self.states[0].lower_bound)
+		self.queue.insert(self.states[0], self.states[0].key())
 		while not self.queue.empty():
 			if len(self.queue) > stats.max_size:
 				stats.max_size = len(self.queue)
@@ -24,11 +24,11 @@ class BranchBound:
 					stats.state = p
 					stats.num_solutions += 1
 				elif p.lower_bound < stats.bssf:
-					self.queue.insert(p, p.lower_bound)
+					self.queue.insert(p, p.key())
 		return stats
 	
 
-class Stats:
+class BranchStats:
 	def __init__(self, bssf, max_size):
 		self.max_size = max_size
 		self.bssf = bssf

@@ -95,10 +95,6 @@ class TSPSolver:
 			for j in range(len(cities)):
 				cost = cities[i].costTo(cities[j])
 				costs[i].append(cost)
-		# costs = [[float('inf'), 7, 3, 12],
-	  #  				 [3, float('inf'), 6, 14],
-		# 				 [5, 8, float('inf'), 6],
-		# 				 [9, 3, 5, float('inf')]]
 		paths = np.array([i for i in range(0, len(costs))])
 		state = State(0, costs, 0, paths, paths, np.array([0]))
 		states = {}
@@ -109,7 +105,6 @@ class TSPSolver:
 		stats = solver.solve(states, bssf)
 		end_time = time.time()
 		sol = TSPSolution([cities[i] for i in stats.state.route] if stats.state else [])
-		print(stats.bssf)
 		results = {}
 		results['cost'] = stats.bssf
 		results['time'] = end_time - start_time
@@ -146,6 +141,9 @@ class State:
 		self.route = route
 		self.cost, b = self.reduce(cost)
 		self.lower_bound = bound + b
+
+	def key(self):
+		return self.lower_bound / len(self.route)
 
 	def expand(self):
 		states = []
