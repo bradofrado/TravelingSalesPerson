@@ -13,6 +13,11 @@ class TSPSolution:
 		self.route = listOfCities
 		self.cost = self._costOfRoute()
 
+	def __str__(self):
+		return str(self.cost)
+	def __repr__(self) -> str:
+		return self.__str__()
+
 	def _costOfRoute( self ):
 		cost = 0
 		last = self.route[0]

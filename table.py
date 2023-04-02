@@ -2,10 +2,10 @@ from TSPSolver import *
 from tabulate import tabulate
 import sys, getopt
 
-def readData(filename):
+def readData():
 	split = lambda line:line.split(' ')
 	data = None
-	with open(filename, 'r') as f:
+	with open(sys.stdin.fileno()) as f:
 		lines = f.readlines()
 		data = [[int(char.replace('\n', '')) for char in split(line)] for line in lines]
 
@@ -19,6 +19,7 @@ def calculateData(data):
 		scenario = Scenario(plist, "Hard (Deterministic)", seed)
 		solver.setupWithScenario(scenario)
 		bssf = solver.branchAndBound(time_allowance)
+		print(bssf, file=sys.stderr)
 		datam.append(bssf['time'])
 		datam.append(bssf['soln'].cost)
 		datam.append(bssf['max'])
@@ -28,7 +29,7 @@ def calculateData(data):
 
 	return data
 
-def getTable(data):
+def getTable(data, format='fancy_grid'):
 	headers = ['# Cities',
 	 				'Seed',
 					'Running time (sec.)',
@@ -37,39 +38,35 @@ def getTable(data):
 					'# of BSSF updates',
 					'Total # of states created',
 					'Total # of states pruned']
-	
-	table = tabulate(data, headers=headers, tablefmt='fancy_grid')
+	table = tabulate(data, headers=headers, tablefmt=format, maxheadercolwidths=8)
 	return table
 
-def write(table, filename='table.txt'):
-	with open(filename, 'w', encoding='utf-8') as f:
+def write(table):
+	with open(sys.stdout.fileno(), 'w', encoding='utf-8') as f:
 		f.write(table)
 
 
 def getargs():
-	inputfile = 'in.txt'
-	outputfile = 'table.txt'
-	opts, args = getopt.getopt(sys.argv[1:], 'hi:o:')
+	format = 'fancy_grid'
+	opts, args = getopt.getopt(sys.argv[1:], 'f')
 	for opt, arg in opts:
 		if opt == '-h':
-			print('table.py -i <inputfile> -o <outputfile>')
+			print('table.py -f <table format>', file=sys.stderr)
 			sys.exit()
-		elif opt == '-i':
-			inputfile = arg
-		elif opt == '-o':
-			outputfile = arg
+		elif opt == '-f':
+			format = arg
 
-	return inputfile, outputfile
+	return format
 
 if __name__ == '__main__':
-	inputfile, outputfile = getargs()
+	format = getargs()
 	SCALE = 1
 	data_range = { 'x':[-1.5*SCALE,1.5*SCALE], \
 								'y':[-SCALE,SCALE] }
 	solver = TSPSolver()
 	time_allowance = 60
-	data = readData(inputfile)
+	data = readData()
 	calculateData(data)
-	table = getTable(data)
-	write(table, outputfile)
+	table = getTable(data, format)
+	write(table)
 	
