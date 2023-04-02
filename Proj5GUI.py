@@ -197,21 +197,9 @@ class Proj5GUI( QMainWindow ):
 	def newPoints(self):
 		# TODO - ERROR CHECKING!!!!
 		seed = int(self.curSeed.text())
-		random.seed( seed )
-
-		ptlist = []
-		RANGE = self.data_range
-		xr = self.data_range['x']
-		yr = self.data_range['y']
 		npoints = int(self.size.text())
-		while len(ptlist) < npoints:
-			x = random.uniform(0.0,1.0)
-			y = random.uniform(0.0,1.0)
-			if True:
-				xval = xr[0] + (xr[1]-xr[0])*x
-				yval = yr[0] + (yr[1]-yr[0])*y
-				ptlist.append( QPointF(xval,yval) )
-		return ptlist
+		ptlist = newPoints(npoints, seed, self.data_range)
+		return [QPointF(pt.x(), pt.y()) for pt in ptlist]
 
 	def generateNetwork(self):
 		points = self.newPoints() # uses current rand seed

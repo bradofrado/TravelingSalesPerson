@@ -11,8 +11,8 @@ import itertools
 
 
 class TSPSolver:
-	def __init__( self, gui_view ):
-		self._scenario = None
+	def __init__( self, scenario = None):
+		self._scenario = scenario
 
 	def setupWithScenario( self, scenario ):
 		self._scenario = scenario

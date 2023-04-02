@@ -170,3 +170,28 @@ class City:
 
 		return int(math.ceil(cost * self.MAP_SCALE))
 
+def newPoints(npoints, seed, data_range):
+	random.seed( seed )
+
+	ptlist = []
+	RANGE = data_range
+	xr = data_range['x']
+	yr = data_range['y']
+	while len(ptlist) < npoints:
+		x = random.uniform(0.0,1.0)
+		y = random.uniform(0.0,1.0)
+		if True:
+			xval = xr[0] + (xr[1]-xr[0])*x
+			yval = yr[0] + (yr[1]-yr[0])*y
+			ptlist.append( Point(xval,yval) )
+	return ptlist
+
+class Point:
+	def __init__(self, x, y):
+		self._x = x
+		self._y = y
+
+	def x(self):
+		return self._x
+	def y(self):
+		return self._y

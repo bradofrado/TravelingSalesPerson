@@ -13,10 +13,10 @@
 			"justMyCode": true
 		},
 		{
-			"name": "Command Line",
+			"name": "Table",
 			"type": "python",
 			"request": "launch",
-			"program": "TSPSolver.py",
+			"program": "Table.py",
 			"console": "integratedTerminal",
 			"justMyCode": true
 		}
