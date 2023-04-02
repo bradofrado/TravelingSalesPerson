@@ -1,3 +1,4 @@
+import time
 import numpy as np
 
 class BranchBound:
@@ -5,10 +6,11 @@ class BranchBound:
 		self.time_allowance = time_allowance
 		self.queue = queue
 	def solve(self, states, bssf):
+		start_time = time.time()
 		stats = BranchStats(bssf, 1)
 		self.states = states
 		self.queue.insert(self.states[0], self.states[0].key())
-		while not self.queue.empty():
+		while not self.queue.empty() and time.time()-start_time < self.time_allowance:
 			if len(self.queue) > stats.max_size:
 				stats.max_size = len(self.queue)
 			pBig = self.queue.delete_min()
@@ -25,6 +27,8 @@ class BranchBound:
 					stats.num_solutions += 1
 				elif p.lower_bound < stats.bssf:
 					self.queue.insert(p, p.key())
+		end_time = time.time()
+		stats.time = end_time - start_time
 		return stats
 	
 
@@ -36,6 +40,7 @@ class BranchStats:
 		self.num_states = max_size
 		self.num_pruned = 0
 		self.num_solutions = 0
+		self.time = 0
 		pass
 		
                   
