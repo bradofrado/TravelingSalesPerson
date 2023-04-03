@@ -31,6 +31,11 @@ class BranchBound:
 					stats.num_pruned += 1
 		end_time = time.time()
 		stats.time = end_time - start_time
+		#prune anything on the after completed the time_allowance
+		while not self.queue.empty():
+				p = self.queue.delete_min()
+				if p.lower_bound > stats.bssf:
+					stats.num_pruned += 1	
 		return stats
 	
 
