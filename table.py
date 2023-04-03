@@ -33,7 +33,7 @@ def getTable(data, format='fancy_grid'):
 	headers = ['# Cities',
 	 				'Seed',
 					'Running time (sec.)',
-					'Cost of best tour found (*=optimal)',
+					'Cost of best tour found',
 					'Max # of stored states at a given time',
 					'# of BSSF updates',
 					'Total # of states created',
@@ -48,7 +48,7 @@ def write(table):
 
 def getargs():
 	format = 'fancy_grid'
-	opts, args = getopt.getopt(sys.argv[1:], 'f')
+	opts, args = getopt.getopt(sys.argv[1:], 'hf:')
 	for opt, arg in opts:
 		if opt == '-h':
 			print('table.py -f <table format>', file=sys.stderr)
