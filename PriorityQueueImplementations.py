@@ -138,7 +138,7 @@ class HeapPriorityQueue(PriorityQueue):
 		right = self.heap[index * 2 + 2] if self.count > index * 2 + 2 else None
 
 		switchIndex = -1
-		if right == None or left[1] < right[1]:
+		if right == None or left[1] <= right[1]:
 			switchIndex = index * 2 + 1
 		elif right[1] < left[1]:
 			switchIndex = index * 2 + 2	
