@@ -2,6 +2,8 @@ from TSPSolver import *
 from tabulate import tabulate
 import sys, getopt
 
+TIME = 60
+
 def readData():
 	split = lambda line:line.split(' ')
 	data = None
@@ -20,8 +22,12 @@ def calculateData(data):
 		solver.setupWithScenario(scenario)
 		bssf = solver.branchAndBound(time_allowance)
 		print(bssf, file=sys.stderr)
-		datam.append(bssf['time'])
-		datam.append(bssf['soln'].cost)
+		cost = bssf['cost']
+		time = bssf['time']
+		if (time < TIME):
+			cost = '*' + str(cost)
+		datam.append(time)
+		datam.append(cost)
 		datam.append(bssf['max'])
 		datam.append(bssf['count'])
 		datam.append(bssf['total'])
@@ -64,7 +70,7 @@ if __name__ == '__main__':
 	data_range = { 'x':[-1.5*SCALE,1.5*SCALE], \
 								'y':[-SCALE,SCALE] }
 	solver = TSPSolver()
-	time_allowance = 60
+	time_allowance = TIME
 	data = readData()
 	calculateData(data)
 	table = getTable(data, format)
