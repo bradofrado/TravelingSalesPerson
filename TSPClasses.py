@@ -139,6 +139,11 @@ class City:
 		self._index = -1
 		self._name	= None
 
+	def __str__(self):
+		return self._name
+	def __repr__(self) -> str:
+		return self.__str__()
+
 	def setIndexAndName( self, index, name ):
 		self._index = index
 		self._name = name

@@ -71,9 +71,45 @@ class TSPSolver:
 		solution found, and three null values for fields not used for this
 		algorithm</returns>
 	'''
-
 	def greedy( self,time_allowance=60.0 ):
-		pass
+		cities = self._scenario.getCities()
+		default_costs = np.array(self.createCostMatrix(cities))
+		sorted_queue = self.createSortedCostList(cities)
+		num_cities = len(cities)
+		start_index = 0
+		start_time = time.time()
+		count = 0
+		route = []
+		while not sorted_queue.empty():
+			path = sorted_queue.delete_min()
+			cost = default_costs[path[0], path[1]]
+			cityFrom = cities[path[0]]
+			cityTo = cities[path[1]]
+			if cost < float('inf'):
+				indexTo = route.index(cityTo) if cityTo in route else -1
+				indexFrom = route.index(cityFrom) if cityFrom in route else -1
+				if indexFrom >= 0 and indexTo >= 0:
+					continue
+				if indexTo >= 0:
+					route.insert(indexTo, cityFrom)
+				elif indexFrom >= 0:
+					route.insert(indexFrom + 1, cityTo)
+				else:
+					route.append(cityFrom)
+					route.append(cityTo)
+				default_costs[path[0], :] = float('inf')
+				default_costs[:, path[1]] = float('inf')
+		end_time = time.time()
+		bssf = TSPSolution(route)
+		results = {}
+		results['cost'] = bssf.cost
+		results['time'] = end_time - start_time
+		results['count'] = 1
+		results['soln'] = bssf
+		results['max'] = None
+		results['total'] = None
+		results['pruned'] = None
+		return results
 
 
 
@@ -89,24 +125,22 @@ class TSPSolver:
 	def branchAndBound( self, time_allowance=60.0 ):
 		queue = HeapPriorityQueue()
 		cities = self._scenario.getCities()
-		costs = []
-		for i in range(len(cities)):
-			costs.append([])
-			for j in range(len(cities)):
-				cost = cities[i].costTo(cities[j])
-				costs[i].append(cost)
+		costs = self.createCostMatrix(cities)
 		paths = np.array([i for i in range(0, len(costs))])
 		state = State(0, costs, 0, paths, paths, np.array([0]))
 		states = {}
 		states[0] = state
 		start_time = time.time()
 		solver = BranchBound(queue, time_allowance)
-		bssf = self.getInitialBSSF(states)
+		bssf = self.getInitialBSSF(time_allowance)
 		stats = solver.solve(states, bssf)
 		end_time = time.time()
 		sol = TSPSolution([cities[i] for i in stats.state.route] if stats.state else [])
 		results = {}
-		results['cost'] = stats.bssf
+
+		#if the final bssf equals the initial, then return 0
+		cost = stats.bssf if stats.bssf != bssf else 0
+		results['cost'] = cost
 		results['time'] = end_time - start_time
 		results['count'] = stats.num_solutions
 		results['soln'] = sol
@@ -117,9 +151,28 @@ class TSPSolver:
 		return results
 		
 
-	def getInitialBSSF(self, states):
-		return float('inf')
+	def getInitialBSSF(self, time_allowance):
+		results = self.defaultRandomTour(time_allowance)
+		return results['cost']
 
+	def createCostMatrix(self, cities):
+		costs = []
+		for i in range(len(cities)):
+			costs.append([])
+			for j in range(len(cities)):
+				cost = cities[i].costTo(cities[j])
+				costs[i].append(cost)
+
+		return costs
+	
+	def createSortedCostList(self, cities):
+		queue = HeapPriorityQueue()
+		for i in range(len(cities)):
+			for j in range(len(cities)):
+				cost = cities[i].costTo(cities[j])
+				if cost != float('inf'):
+					queue.insert((i, j), cost)
+		return queue
 
 	''' <summary>
 		This is the entry point for the algorithm you'll write for your group project.
