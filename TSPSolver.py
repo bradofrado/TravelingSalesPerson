@@ -72,44 +72,46 @@ class TSPSolver:
 		algorithm</returns>
 	'''
 	def greedy( self,time_allowance=60.0 ):
-		cities = self._scenario.getCities()
-		default_costs = np.array(self.createCostMatrix(cities))
-		sorted_queue = self.createSortedCostList(cities)
-		num_cities = len(cities)
-		start_index = 0
 		start_time = time.time()
+		cities = self._scenario.getCities()
 		count = 0
-		route = []
-		while not sorted_queue.empty():
-			path = sorted_queue.delete_min()
-			cost = default_costs[path[0], path[1]]
-			cityFrom = cities[path[0]]
-			cityTo = cities[path[1]]
-			if cost < float('inf'):
-				indexTo = route.index(cityTo) if cityTo in route else -1
-				indexFrom = route.index(cityFrom) if cityFrom in route else -1
-				if indexFrom >= 0 and indexTo >= 0:
-					continue
-				if indexTo >= 0:
-					route.insert(indexTo, cityFrom)
-				elif indexFrom >= 0:
-					route.insert(indexFrom + 1, cityTo)
-				else:
-					route.append(cityFrom)
-					route.append(cityTo)
-				default_costs[path[0], :] = float('inf')
-				default_costs[:, path[1]] = float('inf')
+		foundTour = False
+		while not foundTour and count < len(cities) and time.time()-start_time < time_allowance:
+			curr = cities[count]
+			visited = [curr]
+			unvisited = cities[1:]
+			while unvisited:
+				closest = self.nearest_neighbor(curr, unvisited)
+				if closest == None:
+					break
+				visited.append(closest)
+				unvisited.remove(closest)
+				curr = closest
+			bssf = TSPSolution(visited)
+			if bssf.cost < float('inf'):
+				foundTour = True
+			count += 1
+				
 		end_time = time.time()
-		bssf = TSPSolution(route)
 		results = {}
 		results['cost'] = bssf.cost
 		results['time'] = end_time - start_time
-		results['count'] = 1
+		results['count'] = count
 		results['soln'] = bssf
 		results['max'] = None
 		results['total'] = None
 		results['pruned'] = None
 		return results
+	
+	def nearest_neighbor(self, curr, cities):
+		closest = None
+		minv = float('inf')
+		for city in cities:
+			cost = curr.costTo(city)
+			if cost < minv:
+				minv = cost
+				closest = city
+		return closest
 
 
 
@@ -152,7 +154,7 @@ class TSPSolver:
 		
 
 	def getInitialBSSF(self, time_allowance):
-		results = self.defaultRandomTour(time_allowance)
+		results = self.greedy(time_allowance)
 		return results['cost']
 
 	def createCostMatrix(self, cities):
