@@ -27,6 +27,8 @@ class BranchBound:
 					stats.num_solutions += 1
 				elif p.lower_bound < stats.bssf:
 					self.queue.insert(p, p.key())
+				else:
+					stats.num_pruned += 1
 		end_time = time.time()
 		stats.time = end_time - start_time
 		return stats
