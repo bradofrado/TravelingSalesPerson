@@ -71,11 +71,15 @@ class TSPSolver:
 		solution found, and three null values for fields not used for this
 		algorithm</returns>
 	'''
+	# Time: The greedy algorithm used to initialize takes O(n^2). 
+	#       This is because for each city, it has to look at the minimum nearby city, which takes O(n) for each city and O(n^2) overall
+	# Space: The space is O(n) because we never have to store more than all of the cities in a list at any given time. Plus, this list is 1 dimensional.
 	def greedy( self,time_allowance=60.0 ):
 		start_time = time.time()
 		cities = self._scenario.getCities()
 		count = 0
 		foundTour = False
+		# maybe starting from the first city does not find a solution, so try different start cities
 		while not foundTour and count < len(cities) and time.time()-start_time < time_allowance:
 			curr = cities[count]
 			visited = [curr]
@@ -123,8 +127,11 @@ class TSPSolver:
 		not include the initial BSSF), the best solution found, and three more ints:
 		max queue size, total number of states created, and number of pruned states.</returns>
 	'''
-
+	# Time: The overall time is the time for the solve method in the solver (see discussion there, but we will go with O(n^3*2^n))
+	#       plus the time to initialize the cost matrix and the initial bssf, which is no more than n^2. So overall O(n^3*2^n)
+	# Space: The space is discussed in the solver.solve method, so O(nlogn*n^2)
 	def branchAndBound( self, time_allowance=60.0 ):
+		start_time = time.time()
 		queue = HeapPriorityQueue()
 		cities = self._scenario.getCities()
 		costs = self.createCostMatrix(cities)
@@ -132,7 +139,6 @@ class TSPSolver:
 		state = State(0, costs, 0, paths, paths, np.array([0]))
 		states = {}
 		states[0] = state
-		start_time = time.time()
 		solver = BranchBound(queue, time_allowance)
 		bssf = self.getInitialBSSF(time_allowance)
 		stats = solver.solve(states, bssf)
@@ -153,10 +159,14 @@ class TSPSolver:
 		return results
 		
 
+	# Time: The initial bssf I chose is the greedy algorithm which is O(n^2)
+	# Space: The greedy algorithm has space O(n)
 	def getInitialBSSF(self, time_allowance):
 		results = self.greedy(time_allowance)
 		return results['cost']
 
+	# Time: This function loops through each cell in the 2d cost matrix, so it takes O(n^2) time
+	# Space: The cost matrix is 2d of all of the cities, so O(n^2)
 	def createCostMatrix(self, cities):
 		costs = []
 		for i in range(len(cities)):
@@ -166,15 +176,6 @@ class TSPSolver:
 				costs[i].append(cost)
 
 		return costs
-	
-	def createSortedCostList(self, cities):
-		queue = HeapPriorityQueue()
-		for i in range(len(cities)):
-			for j in range(len(cities)):
-				cost = cities[i].costTo(cities[j])
-				if cost != float('inf'):
-					queue.insert((i, j), cost)
-		return queue
 
 	''' <summary>
 		This is the entry point for the algorithm you'll write for your group project.
@@ -200,36 +201,53 @@ class State:
 	def key(self):
 		return self.lower_bound / len(self.route)
 
+	# Time: This function goes through each unvisited node and creates a new state.
+	#       Creating a state reduces the cost matrix which is O(n^2) time, so doing this
+	#			  for each route is O(n^3) time
+	# Space: Each new state for each unvisited node contains its own copy matrix, so adding
+	#        these up gives us a space of O(n^3)
 	def expand(self):
 		states = []
+		# Looping through n nodes
 		for i in range(len(self.out)):
 			index = self.out[i]#._index
 			if index == self.index:
 				continue
+
+			# Creating a copy of the array is O(n^2) time
 			cost = np.ndarray.copy(self.cost)
 			edge_cost = cost[self.index, index]
+
+			# Each of these lines take O(n)
 			cost[:, index] = float('inf')
 			cost[self.index, :] = float('inf')
 			out = np.delete(self.out, np.where(self.out == self.index))
 			inp = np.delete(self.inp, np.where(self.inp == index))
 			route = np.append(self.route, index)
+
+			#When we create a new state, we reduce the cost matrix which is O(n^2) time
 			state = State(index, cost, self.lower_bound + edge_cost, out, inp, route)
 			states.append(state)
 		return states
 	def is_complete(self):
 		return len(self.out) <= 1
+	
+	# Time: This function goes through each cell in the cost matrix to find the max and reduce
+	#       values in the cells. This overall is O(n^2) time
+	# Space: The space for this function never gets more than the space for the cost matrix, 
+	#        or O(n^2)
 	def reduce(self, cost):
 		cost = np.array(cost)
 		total = 0
 		for i in range(len(self.out)):
-			index = self.out[i]#._index
+			index = self.out[i]
 			minv = min(cost[index, :])
 			if minv == float('inf'):
 				return cost, float('inf')
 			cost[index, :] -= minv
 			total += minv
 		for i in range(len(self.inp)):
-			index = self.inp[i]#._index
+			index = self.inp[i]
 			minv = min(cost[:, index])
 			if minv == float('inf'):
 				return cost, float('inf')
