@@ -186,8 +186,122 @@ class TSPSolver:
 		algorithm</returns>
 	'''
 
-	def fancy( self,time_allowance=60.0 ):
-		pass
+'''
+****************************************************** START EAX FUNCTIONS ********************************************************
+'''	
+
+	def EAX(self, distance_matrix, pop_size, max_iter, crossover_rate, mutation_rate):
+		# Initialize population
+		num_cities = distance_matrix.shape[0]
+		population = []
+		for i in range(pop_size):
+			population.append(np.random.permutation(num_cities))
+
+		# Main loop
+		for i in range(max_iter):
+			# Evaluate fitness of population
+			fitness = []
+			for p in population:
+				fitness.append(total_distance(p, distance_matrix))
+			
+			# Selection
+			parents = []
+			for j in range(pop_size//2):
+				p1, p2 = tournament_selection(population, fitness)
+				parents.append(p1)
+				parents.append(p2)
+			
+			# Crossover
+			children = []
+			for j in range(pop_size//2):
+				if random.random() < crossover_rate:
+					c1, c2 = EAX_crossover(parents[j], parents[j+1], distance_matrix)
+					children.append(c1)
+					children.append(c2)
+			
+			# Mutation
+			for c in children:
+				if random.random() < mutation_rate:
+					c = swap_mutation(c)
+			
+			# Replacement
+			population = replace_worst(population, children, fitness)
+        
+		# Find best solution
+		best_fitness = float('inf')
+		best_solution = None
+		for p in population:
+			p_fitness = total_distance(p, distance_matrix)
+			if p_fitness < best_fitness:
+				best_fitness = p_fitness
+				best_solution = p
+		
+		return best_solution, best_fitness
+
+	def total_distance(self, path, distance_matrix):
+		return sum(distance_matrix[path[i], path[i+1]] for i in range(len(path)-1)) + distance_matrix[path[-1], path[0]]
+
+	def tournament_selection(self, population, fitness, tournament_size=5):
+		tournament = random.sample(range(len(population)), tournament_size)
+		winner = tournament[0]
+		for t in tournament[1:]:
+			if fitness[t] < fitness[winner]:
+				winner = t
+		return population[winner], fitness[winner]
+
+	def EAX_crossover(self, p1, p2, distance_matrix):
+		edges = set()
+		for i in range(len(p1)):
+			edges.add((p1[i], p1[(i+1)%len(p1)]))
+			edges.add((p2[i], p2[(i+1)%len(p2)]))
+		
+		cycles = []
+		while edges:
+			cycle = []
+			current_edge = edges.pop()
+			cycle.append(current_edge[0])
+			next_node = current_edge[1]
+			while next_node != cycle[0]:
+				cycle.append(next_node)
+				for edge in edges:
+					if next_node == edge[0]:
+						next_node = edge[1]
+						edges.remove(edge)
+						break
+					elif next_node == edge[1]:
+						next_node = edge[0]
+						edges.remove(edge)
+						break
+			cycles.append(cycle)
+		
+		child = [-1]*len(p1)
+		for i in range(len(cycles)):
+			if i % 2 == 0:
+				for j in cycles[i]:
+					child[j] = p1[j]
+			else:
+				for j in cycles[i]:
+					child[j] = p2[j]
+		
+		return child, p1[::-1]+p2[len(cycles[-1]):]+p2[:len(cycles[-1])]
+
+	def swap_mutation(self, path):
+		p1 = random.randint(0, len(path)-1)
+		p2 = random.randint(0, len(path)-1)
+		path[p1], path[p2] = path[p2], path[p1]
+		return path
+
+	def replace_worst(self, population, children, fitness):
+		for c in children:
+			worst_index = np.argmax(fitness)
+			if fitness[worst_index] > total_distance(c, distance_matrix):
+				population[worst_index] = c
+				fitness[worst_index] = total_distance(c, distance_matrix)
+		return population
+'''
+****************************************************** END EAX FUNCTIONS ********************************************************
+'''	
+
 
 class State:
 	def __init__(self, index, cost, bound, out, inp, route):
