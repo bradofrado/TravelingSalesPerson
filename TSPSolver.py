@@ -11,12 +11,11 @@ import itertools
 
 
 class TSPSolver:
-	def __init__( self, scenario = None):
+	def __init__(self, scenario=None):
 		self._scenario = scenario
 
-	def setupWithScenario( self, scenario ):
+	def setupWithScenario(self, scenario):
 		self._scenario = scenario
-
 
 	''' <summary>
 		This is the entry point for the default solver
@@ -29,7 +28,7 @@ class TSPSolver:
 		algorithm</returns>
 	'''
 
-	def defaultRandomTour( self, time_allowance=60.0 ):
+	def defaultRandomTour(self, time_allowance=60.0):
 		results = {}
 		cities = self._scenario.getCities()
 		ncities = len(cities)
@@ -37,13 +36,13 @@ class TSPSolver:
 		count = 0
 		bssf = None
 		start_time = time.time()
-		while not foundTour and time.time()-start_time < time_allowance:
+		while not foundTour and time.time() - start_time < time_allowance:
 			# create a random permutation
-			perm = np.random.permutation( ncities )
+			perm = np.random.permutation(ncities)
 			route = []
 			# Now build the route using the random permutation
-			for i in range( ncities ):
-				route.append( cities[ perm[i] ] )
+			for i in range(ncities):
+				route.append(cities[perm[i]])
 			bssf = TSPSolution(route)
 			count += 1
 			if bssf.cost < np.inf:
@@ -59,7 +58,6 @@ class TSPSolver:
 		results['pruned'] = None
 		return results
 
-
 	''' <summary>
 		This is the entry point for the greedy solver, which you must implement for
 		the group project (but it is probably a good idea to just do it for the branch-and
@@ -71,16 +69,17 @@ class TSPSolver:
 		solution found, and three null values for fields not used for this
 		algorithm</returns>
 	'''
-	# Time: The greedy algorithm used to initialize takes O(n^2). 
+
+	# Time: The greedy algorithm used to initialize takes O(n^2).
 	#       This is because for each city, it has to look at the minimum nearby city, which takes O(n) for each city and O(n^2) overall
 	# Space: The space is O(n) because we never have to store more than all of the cities in a list at any given time. Plus, this list is 1 dimensional.
-	def greedy( self,time_allowance=60.0 ):
+	def greedy(self, time_allowance=60.0):
 		start_time = time.time()
 		cities = self._scenario.getCities()
 		count = 0
 		foundTour = False
 		# maybe starting from the first city does not find a solution, so try different start cities
-		while not foundTour and count < len(cities) and time.time()-start_time < time_allowance:
+		while not foundTour and count < len(cities) and time.time() - start_time < time_allowance:
 			curr = cities[count]
 			visited = [curr]
 			unvisited = cities[1:]
@@ -95,7 +94,7 @@ class TSPSolver:
 			if bssf.cost < float('inf'):
 				foundTour = True
 			count += 1
-				
+
 		end_time = time.time()
 		results = {}
 		results['cost'] = bssf.cost
@@ -106,7 +105,7 @@ class TSPSolver:
 		results['total'] = None
 		results['pruned'] = None
 		return results
-	
+
 	def nearest_neighbor(self, curr, cities):
 		closest = None
 		minv = float('inf')
@@ -117,8 +116,6 @@ class TSPSolver:
 				closest = city
 		return closest
 
-
-
 	''' <summary>
 		This is the entry point for the branch-and-bound algorithm that you will implement
 		</summary>
@@ -127,10 +124,11 @@ class TSPSolver:
 		not include the initial BSSF), the best solution found, and three more ints:
 		max queue size, total number of states created, and number of pruned states.</returns>
 	'''
+
 	# Time: The overall time is the time for the solve method in the solver (see discussion there, but we will go with O(n^3*2^n))
 	#       plus the time to initialize the cost matrix and the initial bssf, which is no more than n^2. So overall O(n^3*2^n)
 	# Space: The space is discussed in the solver.solve method, so O(nlogn*n^2)
-	def branchAndBound( self, time_allowance=60.0 ):
+	def branchAndBound(self, time_allowance=60.0):
 		start_time = time.time()
 		queue = HeapPriorityQueue()
 		cities = self._scenario.getCities()
@@ -146,7 +144,7 @@ class TSPSolver:
 		sol = TSPSolution([cities[i] for i in stats.state.route] if stats.state else [])
 		results = {}
 
-		#if the final bssf equals the initial, then return 0
+		# if the final bssf equals the initial, then return 0
 		cost = stats.bssf if stats.bssf != bssf else 0
 		results['cost'] = cost
 		results['time'] = end_time - start_time
@@ -157,7 +155,6 @@ class TSPSolver:
 		results['pruned'] = stats.num_pruned
 
 		return results
-		
 
 	# Time: The initial bssf I chose is the greedy algorithm which is O(n^2)
 	# Space: The greedy algorithm has space O(n)
@@ -186,121 +183,211 @@ class TSPSolver:
 		algorithm</returns>
 	'''
 
-'''
-****************************************************** START EAX FUNCTIONS ********************************************************
-'''	
+	def fancy(self, time_allowance=60.0):
+		start_time = time.time()
 
-	def EAX(self, distance_matrix, pop_size, max_iter, crossover_rate, mutation_rate):
-		# Initialize population
-		num_cities = distance_matrix.shape[0]
+		# Get the cities
+		cities = self._scenario.getCities()
+		num_cities = len(cities)
+
+		# Define the genetic algorithm parameters
+		POPULATION_SIZE = 50
+		PARENTS_SIZE = 10
+		MUTATION_RATE = 0.05
+		ELITE_SIZE = 5  # number of best individuals to carry over to the next generation
+		MAX_ITER_IF_NO_CHANGE = 50  # if the bssf hasn't changed in 50 generations, stop
+
+		# Create the initial population
 		population = []
-		for i in range(pop_size):
-			population.append(np.random.permutation(num_cities))
+		bssf = Individual(self.greedy(time_allowance)['soln'].route)
+		population.append(bssf)  # just to get an initial good solution
 
-		# Main loop
-		for i in range(max_iter):
-			# Evaluate fitness of population
-			fitness = []
-			for p in population:
-				fitness.append(total_distance(p, distance_matrix))
-			
-			# Selection
-			parents = []
-			for j in range(pop_size//2):
-				p1, p2 = tournament_selection(population, fitness)
-				parents.append(p1)
-				parents.append(p2)
-			
-			# Crossover
-			children = []
-			for j in range(pop_size//2):
-				if random.random() < crossover_rate:
-					c1, c2 = EAX_crossover(parents[j], parents[j+1], distance_matrix)
-					children.append(c1)
-					children.append(c2)
-			
-			# Mutation
-			for c in children:
-				if random.random() < mutation_rate:
-					c = swap_mutation(c)
-			
-			# Replacement
-			population = replace_worst(population, children, fitness)
-        
-		# Find best solution
-		best_fitness = float('inf')
-		best_solution = None
-		for p in population:
-			p_fitness = total_distance(p, distance_matrix)
-			if p_fitness < best_fitness:
-				best_fitness = p_fitness
-				best_solution = p
-		
-		return best_solution, best_fitness
+		while len(population) != POPULATION_SIZE:
+			potential_ind = Individual(random.sample(cities, num_cities))
+			if potential_ind.fitness != np.inf and potential_ind not in population:
+				population.append(potential_ind)
+				if bssf is None or potential_ind.fitness < bssf.fitness:
+					bssf = potential_ind
 
-	def total_distance(self, path, distance_matrix):
-		return sum(distance_matrix[path[i], path[i+1]] for i in range(len(path)-1)) + distance_matrix[path[-1], path[0]]
+		count = 0
+		number_gens = 0
+		while time.time() - start_time < time_allowance:
+			number_gens += 1
+			count += 1
+			if count == MAX_ITER_IF_NO_CHANGE:
+				break
+			# Create the next generation
+			next_gen = []
 
-	def tournament_selection(self, population, fitness, tournament_size=5):
-		tournament = random.sample(range(len(population)), tournament_size)
+			# Add the elite individuals to the next generation without any modifications
+			elites = sorted(population)[:ELITE_SIZE]
+			next_gen.extend(elites)
+
+			# tournament selection for the parents
+			while len(next_gen) < PARENTS_SIZE:
+				potential_par = self.tournament_selection(population, 5)
+				if potential_par not in next_gen:
+					next_gen.append(potential_par)
+
+			# Add the rest of the individuals to the next generation
+			for i in range(POPULATION_SIZE - len(next_gen)):
+				# Create a child
+				child1 = self.ERX(next_gen[i % PARENTS_SIZE].route, next_gen[(i + 1) % PARENTS_SIZE].route)
+				# Mutate the child
+				child1.mutate(MUTATION_RATE)
+
+				while not self.check_valid(child1, next_gen):
+					child1 = self.ERX(next_gen[i % PARENTS_SIZE].route, next_gen[(i + 1) % PARENTS_SIZE].route)
+					child1.mutate(MUTATION_RATE)
+
+				next_gen.append(child1)
+				if child1.fitness < bssf.fitness:
+					bssf = child1
+					count = 0
+			# Replace the current population with the next generation
+			population = next_gen
+
+		end_time = time.time()
+		sol = TSPSolution(bssf.route)
+		results = {}
+		results['cost'] = sol.cost
+		results['time'] = end_time - start_time
+		results['count'] = number_gens
+		results['soln'] = sol
+		results['max'] = None
+		results['total'] = None
+		results['pruned'] = None
+
+		return results
+
+	def tournament_selection(self, population, tournament_size=5):
+		# TODO: implement elitism?
+		tournament = random.sample(population, tournament_size)
 		winner = tournament[0]
 		for t in tournament[1:]:
-			if fitness[t] < fitness[winner]:
+			if t.fitness < winner.fitness:
 				winner = t
-		return population[winner], fitness[winner]
+		return winner
 
-	def EAX_crossover(self, p1, p2, distance_matrix):
-		edges = set()
-		for i in range(len(p1)):
-			edges.add((p1[i], p1[(i+1)%len(p1)]))
-			edges.add((p2[i], p2[(i+1)%len(p2)]))
-		
-		cycles = []
-		while edges:
-			cycle = []
-			current_edge = edges.pop()
-			cycle.append(current_edge[0])
-			next_node = current_edge[1]
-			while next_node != cycle[0]:
-				cycle.append(next_node)
-				for edge in edges:
-					if next_node == edge[0]:
-						next_node = edge[1]
-						edges.remove(edge)
-						break
-					elif next_node == edge[1]:
-						next_node = edge[0]
-						edges.remove(edge)
-						break
-			cycles.append(cycle)
-		
-		child = [-1]*len(p1)
-		for i in range(len(cycles)):
-			if i % 2 == 0:
-				for j in cycles[i]:
-					child[j] = p1[j]
+	def ERX(self, parent1, parent2):
+		# implement the edge recombination crossover method for a directed TSP
+		adj_dict = {key: [] for key in parent1}
+		for i in range(len(parent1)):
+			adj_dict[parent1[i]].append(parent1[(i + 1) % len(parent1)])
+			adj_dict[parent2[i]].append(parent2[(i + 1) % len(parent2)])
+
+		# randomly select a starting node
+		start = random.choice(parent1)
+
+		# create the child
+		child = [start]
+		while len(child) < len(parent1):
+			# get the neighbors of the current node
+			neighbors = adj_dict[child[-1]]
+			# remove the neighbors that are already in the child
+			neighbors = [n for n in neighbors if n not in child]
+			# if there are no neighbors left, then choose a random node that is not in the child
+			if len(neighbors) == 0:
+				neighbors = [n for n in parent1 if n not in child]
+			# choose the neighbor with the fewest neighbors
+			neighbor = min(neighbors, key=lambda x: len(adj_dict[x]))
+			child.append(neighbor)
+		return Individual(child)
+	def check_valid(self, ind, next_gen):
+		if ind.fitness == np.inf or ind in next_gen:
+			return False
+		return True
+
+	"""
+		WORKS BUT SLOW AND NOT VERY OPTIMAL
+	
+		def SCX(self, parent1, parent2):
+		# parent1 and parent2 are assumed to be lists representing the parent chromosomes
+		# where each element is a node in the chromosome
+
+		n = len(parent1)
+		offspring = []
+		p = parent1[0]  # start from the first city in parent1
+
+		while len(offspring) < n:
+			# find the first legitimate city in parent1 and parent2
+			alpha = ''
+			beta = ''
+			for i in range(parent1.index(p) + 1, n):
+				if parent1[i] not in offspring:
+					alpha = parent1[i]
+					break
+			for i in range(parent2.index(p) + 1, n):
+				if parent2[i] not in offspring:
+					beta = parent2[i]
+					break
+
+			# if no legitimate cities found in parent1 or parent2, search the remaining cities
+			if alpha == '' or beta == '':
+				for city in parent1 + parent2:
+					if city not in offspring:
+						if alpha == '':
+							alpha = city
+						else:
+							beta = city
+							break
+
+			# select the next city based on cp values
+			cp_alpha = parent1.index(alpha) + parent2.index(alpha)
+			cp_beta = parent1.index(beta) + parent2.index(beta)
+
+			if cp_alpha < cp_beta:
+				next_city = alpha
 			else:
-				for j in cycles[i]:
-					child[j] = p2[j]
-		
-		return child, p1[::-1]+p2[len(cycles[-1]):]+p2[:len(cycles[-1])]
+				next_city = beta
 
-	def swap_mutation(self, path):
-		p1 = random.randint(0, len(path)-1)
-		p2 = random.randint(0, len(path)-1)
-		path[p1], path[p2] = path[p2], path[p1]
-		return path
+			offspring.append(next_city)
 
-	def replace_worst(self, population, children, fitness):
-		for c in children:
-			worst_index = np.argmax(fitness)
-			if fitness[worst_index] > total_distance(c, distance_matrix):
-				population[worst_index] = c
-				fitness[worst_index] = total_distance(c, distance_matrix)
-		return population
-'''
-****************************************************** END EAX FUNCTIONS ********************************************************
-'''	
+			# check if the offspring is complete
+			if len(offspring) == n:
+				break
+
+			# rename the present city as 'p' and repeat the process
+			p = next_city
+
+		return Individual(offspring)
+	"""
+
+
+class Individual:
+	def __init__(self, route):
+		self.route = route
+		self.fitness = self.calculate_fitness()
+
+	def calculate_fitness(self):
+		total_distance = 0
+		for i in range(len(self.route)):
+			total_distance += self.route[i].costTo(self.route[(i + 1) % len(self.route)])
+		return total_distance
+
+	def mutate(self, MUTATION_RATE):
+		# Mutate an individual
+		# Swap two cities in the individual's route
+
+		for i in range(len(self.route)):
+			if random.random() < MUTATION_RATE:
+				# Select two random cities to swap
+				city1_idx = random.randint(0, len(self.route) - 1)
+				city2_idx = random.randint(0, len(self.route) - 1)
+
+				# Swap the cities
+				self.route[city1_idx], self.route[city2_idx] = self.route[city2_idx], self.route[city1_idx]
+		self.fitness = self.calculate_fitness()
+		return self
+
+	def __eq__(self, other):
+		return self.route == other.route
+
+	def __lt__(self, other):
+		return self.fitness < other.fitness
+
+	def __gt__(self, other):
+		return self.fitness > other.fitness
 
 
 class State:
@@ -324,7 +411,7 @@ class State:
 		states = []
 		# Looping through n nodes
 		for i in range(len(self.out)):
-			index = self.out[i]#._index
+			index = self.out[i]  # ._index
 			if index == self.index:
 				continue
 
@@ -339,13 +426,14 @@ class State:
 			inp = np.delete(self.inp, np.where(self.inp == index))
 			route = np.append(self.route, index)
 
-			#When we create a new state, we reduce the cost matrix which is O(n^2) time
+			# When we create a new state, we reduce the cost matrix which is O(n^2) time
 			state = State(index, cost, self.lower_bound + edge_cost, out, inp, route)
 			states.append(state)
 		return states
+
 	def is_complete(self):
 		return len(self.out) <= 1
-	
+
 	# Time: This function goes through each cell in the cost matrix to find the max and reduce
 	#       values in the cells. This overall is O(n^2) time
 	# Space: The space for this function never gets more than the space for the cost matrix, 

@@ -22,9 +22,6 @@ elif PYQT_VER == 'PYQT6':
 else:
 	raise Exception('Unsupported Version of PyQt: {}'.format(PYQT_VER))
 
-
-
-# Import in the code with the actual implementation
 from TSPSolver import *
 from TSPClasses import *
 
@@ -462,8 +459,8 @@ class Proj5GUI( QMainWindow ):
 		for alg in self.ALGORITHMS:
 			self.algDropDown.addItem( alg[0] )
 		self.algDropDown.activated.connect(self.algChanged)
-		self.algDropDown.setCurrentIndex(2)
-		self.algChanged(2) # to handle start state
+		self.algDropDown.setCurrentIndex(3)
+		self.algChanged(3) # to handle start state
 
 		self.graphReady = False
 
