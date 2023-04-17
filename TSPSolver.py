@@ -73,7 +73,7 @@ class TSPSolver:
 	# Time: The greedy algorithm used to initialize takes O(n^2).
 	#       This is because for each city, it has to look at the minimum nearby city, which takes O(n) for each city and O(n^2) overall
 	# Space: The space is O(n) because we never have to store more than all of the cities in a list at any given time. Plus, this list is 1 dimensional.
-	def greedy(self, time_allowance=60.0):
+	def greedy(self, time_allowance=60.0, rnd = False):
 		start_time = time.time()
 		cities = self._scenario.getCities()
 		count = 0
@@ -84,7 +84,7 @@ class TSPSolver:
 			visited = [curr]
 			unvisited = cities[1:]
 			while unvisited:
-				closest = self.nearest_neighbor(curr, unvisited)
+				closest = self.random_neighbor(curr, unvisited) if rnd else self.nearest_neighbor(curr, unvisited)
 				if closest == None:
 					break
 				visited.append(closest)
@@ -115,6 +115,20 @@ class TSPSolver:
 				minv = cost
 				closest = city
 		return closest
+	
+	def random_neighbor(self, curr, cities):
+		cost = float('inf')
+		count = 0
+		MAX_ITER = 100
+		while cost == float('inf') and count < MAX_ITER:
+			city = random.choice(cities)
+			cost = curr.costTo(city)
+			count += 1
+
+		if count >= MAX_ITER:
+			return None
+
+		return city
 
 	''' <summary>
 		This is the entry point for the branch-and-bound algorithm that you will implement
@@ -203,7 +217,7 @@ class TSPSolver:
 		population.append(bssf)  # just to get an initial good solution
 
 		while len(population) != POPULATION_SIZE:
-			potential_ind = Individual(random.sample(cities, num_cities))
+			potential_ind = Individual(self.greedy(time_allowance, True)['soln'].route)
 			if potential_ind.fitness != np.inf and potential_ind not in population:
 				population.append(potential_ind)
 				if bssf is None or potential_ind.fitness < bssf.fitness:
@@ -218,8 +232,8 @@ class TSPSolver:
 			next_gen = []
 
 			# Add the elite individuals to the next generation without any modifications
-			elites = sorted(population)[:ELITE_SIZE]
-			next_gen.extend(elites)
+			elites = sorted(population)
+			next_gen.extend(elites[:ELITE_SIZE])
 
 			# tournament selection for the parents
 			while len(next_gen) < PARENTS_SIZE:

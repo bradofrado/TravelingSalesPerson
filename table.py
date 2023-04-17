@@ -39,7 +39,7 @@ def calculateData(data, algorithms):
 				avg_cost = round(avg_cost)
 			avg_time = sum(times) / len(times)
 
-			if avg_time < time_allowance:
+			if avg_time < time_allowance or j > 2:
 				retd.append(avg_cost)
 				retd.append(avg_time)
 			else:
