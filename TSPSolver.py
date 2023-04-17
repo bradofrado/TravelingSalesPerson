@@ -82,7 +82,8 @@ class TSPSolver:
 		while not foundTour and count < len(cities) and time.time() - start_time < time_allowance:
 			curr = cities[count]
 			visited = [curr]
-			unvisited = cities[1:]
+			unvisited = cities[:]
+			unvisited.remove(curr)
 			while unvisited:
 				closest = self.random_neighbor(curr, unvisited) if rnd else self.nearest_neighbor(curr, unvisited)
 				if closest == None:
