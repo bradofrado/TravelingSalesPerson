@@ -230,17 +230,20 @@ class TSPSolver:
 			# Add the rest of the individuals to the next generation
 			for i in range(POPULATION_SIZE - len(next_gen)):
 				# Create a child
-				child1 = self.ERX(next_gen[i % PARENTS_SIZE].route, next_gen[(i + 1) % PARENTS_SIZE].route)
+				child = self.ERX(next_gen[i % PARENTS_SIZE].route, next_gen[(i + 1) % PARENTS_SIZE].route)
+
 				# Mutate the child
-				child1.mutate(MUTATION_RATE)
+				mutate_child = child
+				mutate_child.mutate(MUTATION_RATE)
 
-				while not self.check_valid(child1, next_gen):
-					child1 = self.ERX(next_gen[i % PARENTS_SIZE].route, next_gen[(i + 1) % PARENTS_SIZE].route)
-					child1.mutate(MUTATION_RATE)
+				while not self.check_valid(mutate_child, next_gen):
+					# redo the mutation TODO do a repair instead?
+					mutate_child = child
+					mutate_child.mutate(MUTATION_RATE)
 
-				next_gen.append(child1)
-				if child1.fitness < bssf.fitness:
-					bssf = child1
+				next_gen.append(mutate_child)
+				if mutate_child.fitness < bssf.fitness:
+					bssf = mutate_child
 					count = 0
 			# Replace the current population with the next generation
 			population = next_gen
@@ -259,7 +262,6 @@ class TSPSolver:
 		return results
 
 	def tournament_selection(self, population, tournament_size=5):
-		# TODO: implement elitism?
 		tournament = random.sample(population, tournament_size)
 		winner = tournament[0]
 		for t in tournament[1:]:
@@ -295,6 +297,7 @@ class TSPSolver:
 			neighbor = min(neighbors, key=lambda x: len(adj_dict[x]))
 			child.append(neighbor)
 		return Individual(child)
+
 	def check_valid(self, ind, next_gen):
 		if ind.fitness == np.inf or ind in next_gen:
 			return False
