@@ -91,7 +91,7 @@ class TSPSolver:
 				unvisited.remove(closest)
 				curr = closest
 			bssf = TSPSolution(visited)
-			if bssf.cost < float('inf'):
+			if bssf.cost < float('inf') and len(visited) == len(cities):
 				foundTour = True
 			count += 1
 
@@ -211,11 +211,9 @@ class TSPSolver:
 
 		count = 0
 		number_gens = 0
-		while time.time() - start_time < time_allowance:
+		while count < MAX_ITER_IF_NO_CHANGE and time.time() - start_time < time_allowance:
 			number_gens += 1
 			count += 1
-			if count == MAX_ITER_IF_NO_CHANGE:
-				break
 			# Create the next generation
 			next_gen = []
 
@@ -271,7 +269,11 @@ class TSPSolver:
 
 	def ERX(self, parent1, parent2):
 		# implement the edge recombination crossover method for a directed TSP
-		adj_dict = {key: [] for key in parent1}
+		parents = []
+		parents.extend(parent1)
+		parents.extend(parent2)
+
+		adj_dict = {key: [] for key in parents}
 		for i in range(len(parent1)):
 			adj_dict[parent1[i]].append(parent1[(i + 1) % len(parent1)])
 			adj_dict[parent2[i]].append(parent2[(i + 1) % len(parent2)])
