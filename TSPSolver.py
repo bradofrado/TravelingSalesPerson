@@ -1,6 +1,5 @@
 #!/usr/bin/python3
-
-
+import copy
 import time
 import numpy as np
 from BranchBound import BranchBound
@@ -210,12 +209,13 @@ class TSPSolver:
 		PARENTS_SIZE = 10
 		MUTATION_RATE = 0.05
 		ELITE_SIZE = 5  # number of best individuals to carry over to the next generation
-		MAX_ITER_IF_NO_CHANGE = 50  # if the bssf hasn't changed in 50 generations, stop
+		MAX_ITER_IF_NO_CHANGE = num_cities * 10  # if the bssf hasn't changed in 50 generations, stop
 
 		# Create the initial population
 		population = []
-		bssf = Individual(self.greedy(time_allowance)['soln'].route)
-		population.append(bssf)  # just to get an initial good solution
+		# bssf = Individual(self.greedy(time_allowance)['soln'].route)
+		# population.append(bssf)  # just to get an initial good solution
+		bssf = None
 
 		while len(population) != POPULATION_SIZE:
 			potential_ind = Individual(self.greedy(time_allowance, True)['soln'].route)
@@ -246,20 +246,33 @@ class TSPSolver:
 			for i in range(POPULATION_SIZE - len(next_gen)):
 				# Create a child
 				child = self.ERX(next_gen[i % PARENTS_SIZE].route, next_gen[(i + 1) % PARENTS_SIZE].route)
+				route_copy = [x for x in child.route]
 
 				# Mutate the child
-				mutate_child = child
+				mutate_child = Individual(route_copy)
 				mutate_child.mutate(MUTATION_RATE)
 
-				while not self.check_valid(mutate_child, next_gen):
-					# redo the mutation TODO do a repair instead?
-					mutate_child = child
+				max_mutations = 10
+				i = 0
+				while not self.check_valid(mutate_child, next_gen) and i < max_mutations:
+					i += 1
+					# redo the mutation
+					mutate_child = Individual(route_copy)
 					mutate_child.mutate(MUTATION_RATE)
 
-				next_gen.append(mutate_child)
-				if mutate_child.fitness < bssf.fitness:
-					bssf = mutate_child
-					count = 0
+				if self.check_valid(mutate_child, next_gen):
+					next_gen.append(mutate_child)
+					if mutate_child.fitness < bssf.fitness:
+						bssf = mutate_child
+						count = 0
+				elif self.check_valid(child, next_gen):
+					next_gen.append(child)
+					if child.fitness < bssf.fitness:
+						bssf = child
+						count = 0
+				else:
+					# if the child is not valid, then add the parent
+					next_gen.append(next_gen[i % PARENTS_SIZE])
 			# Replace the current population with the next generation
 			population = next_gen
 
@@ -288,7 +301,6 @@ class TSPSolver:
 		# implement the edge recombination crossover method for a directed TSP
 		parents = []
 		parents.extend(parent1)
-		parents.extend(parent2)
 
 		adj_dict = {key: [] for key in parents}
 		for i in range(len(parent1)):
@@ -300,17 +312,29 @@ class TSPSolver:
 
 		# create the child
 		child = [start]
-		while len(child) < len(parent1):
+		# TODO: sometimes spits out an invalid child
+		while True:
 			# get the neighbors of the current node
 			neighbors = adj_dict[child[-1]]
 			# remove the neighbors that are already in the child
 			neighbors = [n for n in neighbors if n not in child]
 			# if there are no neighbors left, then choose a random node that is not in the child
 			if len(neighbors) == 0:
+				# possibly problem here???? TODO
 				neighbors = [n for n in parent1 if n not in child]
 			# choose the neighbor with the fewest neighbors
 			neighbor = min(neighbors, key=lambda x: len(adj_dict[x]))
-			child.append(neighbor)
+
+			if child[-1].costTo(neighbor) == np.inf:
+				self.repair(child, neighbor)
+			else:
+				child.append(neighbor)
+
+			# final check (and repair) to make sure the child is valid
+			if len(child) == len(parent1):
+				if child[-1].costTo(child[0]) == np.inf:
+					self.repair(child, child.pop(0), True)
+				break
 		return Individual(child)
 
 	def check_valid(self, ind, next_gen):
@@ -373,6 +397,31 @@ class TSPSolver:
 		return Individual(offspring)
 	"""
 
+	def repair(self, child, neighbor, final_test=False):
+		# repair the child by swapping the neighbor with the city that has the lowest cost to the neighbor
+		# alternative repair: insert the city instead of swap?
+
+		# get the cost of the neighbor to all other cities
+		neighbor_costs = [neighbor.costTo(c) for c in child]
+		# get the index of the city with the lowest cost to the neighbor
+		min_idx = neighbor_costs.index(min(neighbor_costs))
+		if final_test:  # we can't use the first city in the child since that is what it originally was
+			neighbor_costs[min_idx] = np.inf
+			min_idx = neighbor_costs.index(min(neighbor_costs))
+
+		if min_idx == 0 or child[min_idx - 1].costTo(neighbor) != np.inf:
+			child.insert(min_idx, neighbor)
+		else:
+			# try swapping with the second minimum city
+			neighbor_costs[min_idx] = np.inf
+			min_idx = neighbor_costs.index(min(neighbor_costs))
+
+			# recheck if the second minimum city is valid
+			if min_idx == 0 or child[(min_idx - 1)].costTo(neighbor) != np.inf:
+				child.insert(min_idx, neighbor)
+			else:
+				# give up -- the child is invalid and cannot be repaired
+				child.append(neighbor)
 
 class Individual:
 	def __init__(self, route):
@@ -399,6 +448,30 @@ class Individual:
 				self.route[city1_idx], self.route[city2_idx] = self.route[city2_idx], self.route[city1_idx]
 		self.fitness = self.calculate_fitness()
 		return self
+
+	# def repair(self):
+	# 	# perform a repair on the individual
+	# 	problem_edges = []
+	# 	for i in range(len(self.route)):
+	# 		for j in range(i + 1, len(self.route)):
+	# 			if self.route[i].costTo(self.route[j]) == np.inf:
+	# 				problem_edges.append((i, j))
+	# 	for edge in problem_edges:
+	# 		# switch the edge with the shortest edge that does not cause a problem
+	#
+	# 		# get the shortest edge that does not cause a problem
+	# 		shortest = np.inf
+	# 		shortest_edge = None
+	# 		for i in range(len(self.route)):
+	# 			for j in range(i + 1, len(self.route)):
+	# 				if self.route[i].costTo(self.route[j]) != np.inf:
+	# 					if self.route[i].costTo(self.route[j]) < shortest:
+	# 						shortest = self.route[i].costTo(self.route[j])
+	# 						shortest_edge = (i, j)
+	# 		# switch the edge
+	# 		self.route[edge[0]], self.route[edge[1]] = self.route[shortest_edge[0]], self.route[shortest_edge[1]]
+	# 	self.fitness = self.calculate_fitness()
+	# 	return self
 
 	def __eq__(self, other):
 		return self.route == other.route
