@@ -2,7 +2,7 @@ from TSPSolver import *
 from tabulate import tabulate
 import sys, getopt
 
-TIME = 300
+TIME = 600
 
 def readData():
 	split = lambda line:line.split(' ')
@@ -99,7 +99,7 @@ if __name__ == '__main__':
 	solver = TSPSolver()
 	time_allowance = TIME
 	data = readData()
-	algorithms = [solver.defaultRandomTour, solver.greedy, solver.branchAndBound]
+	algorithms = [solver.fancy]
 	data = calculateData(data, algorithms)
 	table = getTable(data, algorithms, format)
 	write(table)

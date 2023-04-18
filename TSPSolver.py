@@ -1,12 +1,7 @@
 #!/usr/bin/python3
-import copy
-import time
-import numpy as np
 from BranchBound import BranchBound
 from PriorityQueueImplementations import HeapPriorityQueue
 from TSPClasses import *
-import heapq
-import itertools
 
 
 class TSPSolver:
@@ -207,7 +202,7 @@ class TSPSolver:
 		# Define the genetic algorithm parameters
 		POPULATION_SIZE = 50
 		PARENTS_SIZE = 10
-		MUTATION_RATE = 0.05
+		MUTATION_RATE = 0.1
 		ELITE_SIZE = 5  # number of best individuals to carry over to the next generation
 		MAX_ITER_IF_NO_CHANGE = num_cities * 10  # if the bssf hasn't changed in 50 generations, stop
 
@@ -312,7 +307,6 @@ class TSPSolver:
 
 		# create the child
 		child = [start]
-		# TODO: sometimes spits out an invalid child
 		while True:
 			# get the neighbors of the current node
 			neighbors = adj_dict[child[-1]]
@@ -320,7 +314,6 @@ class TSPSolver:
 			neighbors = [n for n in neighbors if n not in child]
 			# if there are no neighbors left, then choose a random node that is not in the child
 			if len(neighbors) == 0:
-				# possibly problem here???? TODO
 				neighbors = [n for n in parent1 if n not in child]
 			# choose the neighbor with the fewest neighbors
 			neighbor = min(neighbors, key=lambda x: len(adj_dict[x]))
@@ -341,61 +334,6 @@ class TSPSolver:
 		if ind.fitness == np.inf or ind in next_gen:
 			return False
 		return True
-
-	"""
-		WORKS BUT SLOW AND NOT VERY OPTIMAL
-	
-		def SCX(self, parent1, parent2):
-		# parent1 and parent2 are assumed to be lists representing the parent chromosomes
-		# where each element is a node in the chromosome
-
-		n = len(parent1)
-		offspring = []
-		p = parent1[0]  # start from the first city in parent1
-
-		while len(offspring) < n:
-			# find the first legitimate city in parent1 and parent2
-			alpha = ''
-			beta = ''
-			for i in range(parent1.index(p) + 1, n):
-				if parent1[i] not in offspring:
-					alpha = parent1[i]
-					break
-			for i in range(parent2.index(p) + 1, n):
-				if parent2[i] not in offspring:
-					beta = parent2[i]
-					break
-
-			# if no legitimate cities found in parent1 or parent2, search the remaining cities
-			if alpha == '' or beta == '':
-				for city in parent1 + parent2:
-					if city not in offspring:
-						if alpha == '':
-							alpha = city
-						else:
-							beta = city
-							break
-
-			# select the next city based on cp values
-			cp_alpha = parent1.index(alpha) + parent2.index(alpha)
-			cp_beta = parent1.index(beta) + parent2.index(beta)
-
-			if cp_alpha < cp_beta:
-				next_city = alpha
-			else:
-				next_city = beta
-
-			offspring.append(next_city)
-
-			# check if the offspring is complete
-			if len(offspring) == n:
-				break
-
-			# rename the present city as 'p' and repeat the process
-			p = next_city
-
-		return Individual(offspring)
-	"""
 
 	def repair(self, child, neighbor, final_test=False):
 		# repair the child by swapping the neighbor with the city that has the lowest cost to the neighbor
